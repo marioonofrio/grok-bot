@@ -39,8 +39,20 @@ client.on('messageCreate', async (message) => {
         } else {
             try {
                 const reply = await generateGrokReply(prompt);
-                // Discord message limit is 2000 characters
-                if (reply.length <= 2000) {
+
+                // Check if reply is a direct image URL
+                const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
+                const imageMatch = reply.match(imageRegex);
+
+                if (imageMatch) {
+                    // Send image as an embed
+                    await message.reply({
+                        content: reply.replace(imageRegex, '').trim(), // Send any text without the image URL
+                        embeds: [{
+                            image: { url: imageMatch[1] }
+                        }]
+                    });
+                } else if (reply.length <= 2000) {
                     message.reply(reply);
                 } else {
                     for (let i = 0; i < reply.length; i += 2000) {
