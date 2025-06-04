@@ -14,14 +14,10 @@ client.on('messageCreate', async (message) => {
     let shouldReply = false;
     let prompt = '';
 
-    // 1. If the bot is mentioned
     if (message.mentions.has(client.user)) {
         prompt = message.content.replace(`<@${client.user.id}>`, '').trim();
         shouldReply = true;
-    }
-
-    // 2. If the message is a reply to the bot
-    else if (message.reference) {
+    } else if (message.reference) {
         try {
             const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
             if (referencedMessage.author.id === client.user.id) {
@@ -38,16 +34,22 @@ client.on('messageCreate', async (message) => {
             message.reply('You mentioned me! Please provide a prompt.');
         } else {
             try {
-                const reply = await generateGrokReply(prompt);
+                // If the prompt looks like an image request, clarify for Grok
+                const imageRequest = /(draw|generate|show|create).*(image|picture|photo|art|drawing)/i.test(prompt);
+                let grokPrompt = prompt;
+                if (imageRequest) {
+                    grokPrompt += "\nPlease respond with a direct image URL only, no extra text.";
+                }
+
+                const reply = await generateGrokReply(grokPrompt);
 
                 // Check if reply is a direct image URL
                 const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
                 const imageMatch = reply.match(imageRegex);
 
                 if (imageMatch) {
-                    // Send image as an embed
                     await message.reply({
-                        content: reply.replace(imageRegex, '').trim(), // Send any text without the image URL
+                        content: reply.replace(imageRegex, '').trim(),
                         embeds: [{
                             image: { url: imageMatch[1] }
                         }]
