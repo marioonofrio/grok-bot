@@ -30,42 +30,45 @@ client.on('messageCreate', async (message) => {
     }
 
     if (shouldReply) {
-        if (!prompt) {
-            message.reply('You mentioned me! Please provide a prompt.');
-        } else {
-            try {
-                // If the prompt looks like an image request, clarify for Grok
-                const imageRequest = /(draw|generate|show|create).*(image|picture|photo|art|drawing)/i.test(prompt);
-                let grokPrompt = prompt;
-                if (imageRequest) {
-                    grokPrompt += "\nPlease respond with a direct image URL only, no extra text.";
-                }
+    if (!prompt) {
+        message.reply('You mentioned me! Please provide a prompt.');
+    } else {
+        try {
+            const imageRequest = /(draw|generate|show|create).*(image|picture|photo|art|drawing)/i.test(prompt);
+            let grokPrompt = prompt;
+            if (imageRequest) {
+                grokPrompt += "\nRespond ONLY with a direct image URL (ending in .jpg, .png, .gif, or .webp) and nothing else.";
+            }
 
-                const reply = await generateGrokReply(grokPrompt);
+            const reply = await generateGrokReply(grokPrompt);
 
-                // Check if reply is a direct image URL
-                const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
-                const imageMatch = reply.match(imageRegex);
+            // Check for a valid image URL
+            const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
+            const imageMatch = reply.match(imageRegex);
 
+            if (imageRequest) {
                 if (imageMatch) {
                     await message.reply({
-                        content: reply.replace(imageRegex, '').trim(),
+                        content: '', // No extra text
                         embeds: [{
                             image: { url: imageMatch[1] }
                         }]
                     });
-                } else if (reply.length <= 2000) {
-                    message.reply(reply);
                 } else {
-                    for (let i = 0; i < reply.length; i += 2000) {
-                        await message.reply(reply.slice(i, i + 2000));
-                    }
+                    await message.reply("Sorry, I couldn't generate an image for that prompt.");
                 }
-            } catch {
-                message.reply('Failed to generate a reply from Grok.');
+            } else if (reply.length <= 2000) {
+                message.reply(reply);
+            } else {
+                for (let i = 0; i < reply.length; i += 2000) {
+                    await message.reply(reply.slice(i, i + 2000));
+                }
             }
+        } catch {
+            message.reply('Failed to generate a reply from Grok.');
         }
     }
+}
 });
 
 client.login(discordToken);
