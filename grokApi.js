@@ -1,8 +1,17 @@
-async function generateGrokReply(messages) {
+const axios = require('axios');
+const { grokApiToken } = require('./config');
+
+const GROK_API_BASE_URL = 'https://api.x.ai/v1';
+
+async function generateGrokReply(prompt) {
     try {
         const response = await axios.post(
             `${GROK_API_BASE_URL}/chat/completions`,
-            { messages },
+            {
+                messages: [
+                    { role: 'user', content: prompt }
+                ]
+            },
             {
                 headers: {
                     'Authorization': `Bearer ${grokApiToken}`,
@@ -10,6 +19,7 @@ async function generateGrokReply(messages) {
                 }
             }
         );
+        // Extract the assistant's reply from the response (OpenAI-style)
         if (
             response.data &&
             response.data.choices &&
@@ -25,3 +35,6 @@ async function generateGrokReply(messages) {
         throw error;
     }
 }
+
+
+module.exports = { generateGrokReply };
