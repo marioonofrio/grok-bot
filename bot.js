@@ -64,7 +64,8 @@ client.on('messageCreate', async (message) => {
                     await message.reply(reply.slice(i, i + 2000));
                 }
             }
-        } catch {
+        } catch (err) {
+            console.error('Grok error:', err);
             message.reply('Failed to generate a reply from Grok.');
         }
     }

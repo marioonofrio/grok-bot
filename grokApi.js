@@ -6,19 +6,20 @@ const GROK_API_BASE_URL = 'https://api.x.ai/v1';
 async function generateGrokReply(prompt) {
     try {
         const response = await axios.post(
-            `${GROK_API_BASE_URL}/chat/completions`,
-            {
-                messages: [
-                    { role: 'user', content: prompt }
-                ]
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${grokApiToken}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+    `${GROK_API_BASE_URL}/chat/completions`,
+    {
+        model: "grok-3", // <-- Replace with the correct model name for your account
+        messages: [
+            { role: 'user', content: prompt }
+        ]
+    },
+    {
+        headers: {
+            'Authorization': `Bearer ${grokApiToken}`,
+            'Content-Type': 'application/json'
+        }
+    }
+);
         // Extract the assistant's reply from the response (OpenAI-style)
         if (
             response.data &&
