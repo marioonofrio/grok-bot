@@ -1,3 +1,13 @@
+const { Client, GatewayIntentBits } = require('discord.js');
+const { generateGrokReply } = require('./grokApi');
+const { discordToken } = require('./config');
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
+
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
