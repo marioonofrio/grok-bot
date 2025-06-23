@@ -15,13 +15,28 @@ client.on('messageCreate', async (message) => {
     let prompt = '';
 
     if (message.mentions.has(client.user)) {
-        prompt = message.content.replace(`<@${client.user.id}>`, '').trim();
+        // Remove all mentions (user, role, etc.) from the message content
+        prompt = message.content.replace(/<@!?[0-9]+>|<@&[0-9]+>/g, '').trim();
         shouldReply = true;
     } else if (message.reference) {
+        // Walk up the reply chain and collect all messages
+        let chain = [];
+        let currentMsg = message;
         try {
+            while (currentMsg && currentMsg.reference) {
+                const refMsg = await currentMsg.channel.messages.fetch(currentMsg.reference.messageId);
+                // Only include messages from users (not bots)
+                if (!refMsg.author.bot) {
+                    chain.unshift(refMsg.content.trim());
+                }
+                currentMsg = refMsg;
+            }
+            // Add the current message's content
+            chain.push(message.content.trim());
+            prompt = chain.join('\n');
+            // Only reply if the original message was replying to the bot
             const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
             if (referencedMessage.author.id === client.user.id) {
-                prompt = message.content.trim();
                 shouldReply = true;
             }
         } catch (err) {
@@ -30,46 +45,24 @@ client.on('messageCreate', async (message) => {
     }
 
     if (shouldReply) {
-    if (!prompt) {
-        message.reply('You mentioned me! Please provide a prompt.');
-    } else {
-        try {
-            const imageRequest = /(draw|generate|show|create).*(image|picture|photo|art|drawing)/i.test(prompt);
-            let grokPrompt = prompt;
-            if (imageRequest) {
-                grokPrompt += "\nRespond ONLY with a direct image URL (ending in .jpg, .png, .gif, or .webp) and nothing else.";
-            }
-
-            const reply = await generateGrokReply(grokPrompt);
-
-            // Check for a valid image URL
-            const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
-            const imageMatch = reply.match(imageRegex);
-
-            if (imageRequest) {
-                if (imageMatch) {
-                    await message.reply({
-                        content: '', // No extra text
-                        embeds: [{
-                            image: { url: imageMatch[1] }
-                        }]
-                    });
+        if (!prompt) {
+            message.reply('You mentioned me! Please provide a prompt.');
+        } else {
+            try {
+                const reply = await generateGrokReply(prompt);
+                if (reply.length <= 2000) {
+                    message.reply(reply);
                 } else {
-                    await message.reply("Sorry, I couldn't generate an image for that prompt.");
+                    for (let i = 0; i < reply.length; i += 2000) {
+                        await message.reply(reply.slice(i, i + 2000));
+                    }
                 }
-            } else if (reply.length <= 2000) {
-                message.reply(reply);
-            } else {
-                for (let i = 0; i < reply.length; i += 2000) {
-                    await message.reply(reply.slice(i, i + 2000));
-                }
+            } catch (err) {
+                console.error('Grok error:', err);
+                message.reply('Failed to generate a reply from Grok.');
             }
-        } catch (err) {
-            console.error('Grok error:', err);
-            message.reply('Failed to generate a reply from Grok.');
         }
     }
-}
 });
 
 client.login(discordToken);
