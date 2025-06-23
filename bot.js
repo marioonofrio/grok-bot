@@ -1,13 +1,3 @@
-const { Client, GatewayIntentBits } = require('discord.js');
-const { generateGrokReply } = require('./grokApi');
-const { discordToken } = require('./config');
-
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-
-client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
-
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
@@ -23,8 +13,12 @@ client.on('messageCreate', async (message) => {
         let chain = [];
         let currentMsg = message;
         try {
+            let grokInChain = false;
             while (currentMsg && currentMsg.reference) {
                 const refMsg = await currentMsg.channel.messages.fetch(currentMsg.reference.messageId);
+                if (refMsg.author.id === client.user.id) {
+                    grokInChain = true;
+                }
                 // Only include messages from users (not bots)
                 if (!refMsg.author.bot) {
                     chain.unshift(refMsg.content.trim());
@@ -34,9 +28,7 @@ client.on('messageCreate', async (message) => {
             // Add the current message's content
             chain.push(message.content.trim());
             prompt = chain.join('\n');
-            // Only reply if the original message was replying to the bot
-            const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
-            if (referencedMessage.author.id === client.user.id) {
+            if (grokInChain) {
                 shouldReply = true;
             }
         } catch (err) {
