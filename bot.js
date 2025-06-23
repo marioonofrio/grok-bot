@@ -24,15 +24,13 @@ client.on('messageCreate', async (message) => {
         let currentMsg = message;
         try {
             let grokInChain = false;
-            while (currentMsg && currentMsg.reference) {
+            while (currentMsg && currentMsg.reference) {            chain.unshift(refMsg.content.trim());
                 const refMsg = await currentMsg.channel.messages.fetch(currentMsg.reference.messageId);
                 if (refMsg.author.id === client.user.id) {
                     grokInChain = true;
                 }
                 // Only include messages from users (not bots)
-                if (!refMsg.author.bot) {
-                    chain.unshift(refMsg.content.trim());
-                }
+                chain.unshift(refMsg.content.trim());
                 currentMsg = refMsg;
             }
             // Add the current message's content
