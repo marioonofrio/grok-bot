@@ -6,21 +6,27 @@ const GROK_API_BASE_URL = 'https://api.x.ai/v1';
 async function generateGrokReply(prompt) {
     try {
         const response = await axios.post(
-    `${GROK_API_BASE_URL}/chat/completions`,
-    {
-        model: "grok-3", // <-- Replace with the correct model name for your account
-        messages: [
-            { role: 'user', content: prompt }
-        ]
-    },
-    {
-        headers: {
-            'Authorization': `Bearer ${grokApiToken}`,
-            'Content-Type': 'application/json'
-        }
-    }
-);
-        // Extract the assistant's reply from the response (OpenAI-style)
+            `${GROK_API_BASE_URL}/chat/completions`,
+            {
+                model: "grok-3",
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are Grok, a clever and witty AI assistant inside a Discord server. 
+You respond like a human who goes by the name Grok (user ID: vesperfungus820) when mentioned. 
+Keep your tone fun, playful, and casual — you're part of the community.`
+                    },
+                    { role: 'user', content: prompt }
+                ]
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${grokApiToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
         if (
             response.data &&
             response.data.choices &&
@@ -36,6 +42,7 @@ async function generateGrokReply(prompt) {
         throw error;
     }
 }
+
 
 
 module.exports = { generateGrokReply };

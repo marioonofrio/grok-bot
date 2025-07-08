@@ -11,58 +11,58 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    let shouldReply = false;
-let prompt = '';
+    const isMentioned = message.mentions.has(client.user);
+    if (!isMentioned) return;
 
-if (message.mentions.has(client.user)) {
-    // Remove all mentions (user, role, etc.) from the message content
-    prompt = message.content.replace(/<@!?[0-9]+>|<@&[0-9]+>/g, '').trim();
-    shouldReply = true;
-} else if (message.reference) {
-    // Walk up the reply chain and collect all messages (including bot)
-    let chain = [];
-    let currentMsg = message;
+    let prompt = '';
+    let context = [];
+
     try {
-        let grokInChain = false;
-        while (currentMsg && currentMsg.reference) {
-            const refMsg = await currentMsg.channel.messages.fetch(currentMsg.reference.messageId);
-            if (refMsg.author.id === client.user.id) {
-                grokInChain = true;
+        // If message is a reply, walk up the thread to collect context
+        if (message.reference?.messageId) {
+            let currentMessage = await message.channel.messages.fetch(message.reference.messageId);
+            while (currentMessage) {
+                if (!currentMessage.author.bot) {
+                    context.unshift(`${currentMessage.author.username}: ${currentMessage.content.trim()}`);
+                }
+
+                // Check if there's another message this one replied to
+                if (currentMessage.reference?.messageId) {
+                    currentMessage = await message.channel.messages.fetch(currentMessage.reference.messageId);
+                } else {
+                    break;
+                }
             }
-            // Include ALL messages for full context
-            chain.unshift(refMsg.content.trim());
-            currentMsg = refMsg;
         }
-        // Add the current message's content
-        chain.push(message.content.trim());
-        prompt = chain.join('\n');
-        if (grokInChain) {
-            shouldReply = true;
+
+        const cleanedPrompt = message.content.replace(`<@${client.user.id}>`, '').trim();
+        context.push(`${message.author.username}: ${cleanedPrompt}`);
+
+        prompt = context.join('\n');
+    } catch (err) {
+        console.error('Error building reply context thread:', err);
+        prompt = message.content.replace(`<@${client.user.id}>`, '').trim();
+    }
+
+    if (!prompt.trim()) {
+        return message.reply('You mentioned me! Please provide a prompt.');
+    }
+
+    try {
+        const reply = await generateGrokReply(prompt);
+
+        if (reply.length <= 2000) {
+            await message.reply(reply);
+        } else {
+            for (let i = 0; i < reply.length; i += 2000) {
+                await message.reply(reply.slice(i, i + 2000));
+            }
         }
     } catch (err) {
-        // Could not fetch referenced message, ignore
-    }
-}
-
-    if (shouldReply) {
-        if (!prompt) {
-            message.reply('You mentioned me! Please provide a prompt.');
-        } else {
-            try {
-                const reply = await generateGrokReply(prompt);
-                if (reply.length <= 2000) {
-                    message.reply(reply);
-                } else {
-                    for (let i = 0; i < reply.length; i += 2000) {
-                        await message.reply(reply.slice(i, i + 2000));
-                    }
-                }
-            } catch (err) {
-                console.error('Grok error:', err);
-                message.reply('Failed to generate a reply from Grok.');
-            }
-        }
+        console.error('Grok error:', err);
+        await message.reply('Failed to generate a reply from Grok.');
     }
 });
+
 
 client.login(discordToken);
