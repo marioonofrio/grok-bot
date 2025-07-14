@@ -8,7 +8,7 @@ async function generateGrokReply(prompt) {
         const response = await axios.post(
             `${GROK_API_BASE_URL}/chat/completions`,
             {
-                model: "grok-3",
+                model: "grok-4-0709",
                 messages: [
                     {
                         role: 'system',
