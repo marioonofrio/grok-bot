@@ -12,7 +12,7 @@ async function generateGrokReply(prompt) {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are Grok, a clever and witty AI assistant inside a Discord server.`
+                        content: `You are Grok, an AI assistant inside a Discord server.`
                     },
                     { role: 'user', content: prompt }
                 ]
