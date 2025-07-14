@@ -6,7 +6,7 @@ Grok is a conversational Discord bot powered by x.ai (Grok API). It responds whe
 
 - Responds only when @mentioned
 - Thread-based memory using reply chains
-- Uses Grok-3 model from x.ai API
+- Uses grok-4-0709 model from x.ai API
 
 ## Getting Started
 
